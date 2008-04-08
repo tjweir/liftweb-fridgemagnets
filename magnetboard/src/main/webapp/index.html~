@@ -1,5 +1,0 @@
-<lift:surround with="default" at="content">
-
-    <lift:comet type="MagnetBoard" />
-
-</lift:surround>

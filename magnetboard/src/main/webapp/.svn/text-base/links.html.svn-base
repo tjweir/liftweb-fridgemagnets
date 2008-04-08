@@ -1,6 +1,0 @@
-<lift:surround with="default" at="content">
-<a href='/timesheets/clients/add'>Add a Client</a>
-<table id="example" class="tablesorter" width="90%">
-<lift:snippet type="SheetUtil:ClientList"/>
-</table>
-</lift:surround>
