@@ -1,0 +1,63 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import DB._
+import java.sql.Connection
+import net.liftweb.example.model._
+import net.liftweb.util._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+
+
+object Client extends Client with KeyedMetaMapper[long, Client] {
+  override def dbTableName = "clients" 
+  override def fieldOrder =  List(id, name, address, city, website, notes)
+
+  val sitemap = List(
+    Menu(Loc("ListClient", "/timesheets/clients/list", "List Clients", If(User.loggedIn_? _, "Please login"))),
+    Menu(Loc("CreateClient", "/timesheets/clients/add", "Create An Entry", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("ViewClient", "/timesheets/clients/view", "View Client", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("EditClient", "/timesheets/clients/edit", "Edit Client", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("DeleteClient", "/timesheets/clients/delete", "Del Client", If(User.loggedIn_? _, "Please login"), Hidden)))
+}
+
+
+class Client extends KeyedMapper[Long, Client] {
+  def getSingleton = Client
+  def primaryKeyField = id
+
+  // from DPP - field.obj.map(_.asHtml).openOr(Text(""))
+  // asHTML =
+
+  object id extends MappedLongIndex(this)
+
+  object name extends MappedString(this, 64) 
+  {
+    override def displayName = "Client Name"
+    override def dbIndexed_? = true
+  }
+
+  object address extends MappedString(this, 64) 
+  {
+   override def displayName = "Address"
+  }
+  
+  object city extends MappedString(this, 64)
+  {
+    override def displayName = "City"
+  }
+  
+  object website extends MappedString(this, 128) 
+  {
+    override def displayName = "Website"
+  }
+  
+  object notes extends MappedTextarea(this, 4096) 
+  {
+    override def displayName = "Comments"
+    override def textareaRows  = 10
+    override def textareaCols = 50
+  }
+
+}

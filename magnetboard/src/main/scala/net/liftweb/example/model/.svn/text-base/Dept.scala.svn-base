@@ -1,0 +1,34 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import DB._
+import java.sql.Connection
+import net.liftweb.example.model._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+ 
+object Dept extends Dept with KeyedMetaMapper[long, Dept] {
+  override def dbTableName = "dept"
+  override def fieldOrder = List(id, deptId, name)
+}
+
+class Dept extends KeyedMapper[Long, Dept] {
+  def getSingleton = Dept // what's the "meta" object
+  def primaryKeyField = id
+
+  // from DPP - field.obj.map(_.asHtml).openOr(Text(""))
+  // asHTML =
+
+  object id extends MappedLongIndex(this)
+
+  object deptId extends MappedInt(this) {
+    override def displayName = "Dept Code"  
+  }
+  
+
+  object name extends MappedString(this, 64) {
+    override def displayName = "Dept Name"
+    override def dbIndexed_? = true
+  }
+}

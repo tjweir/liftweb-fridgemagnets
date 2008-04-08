@@ -1,0 +1,80 @@
+#loginTable{
+  border: 3px solid #CCC;
+  background: #EFEFEF;
+  width: 400px;
+  margin-left: 30px;
+  padding: 10px;
+}
+
+
+#loginHeader {
+  color: white;
+  background: #336699;
+  text-align: center;
+}
+
+
+#tablist {
+  padding: 2px 0;
+  margin-left: 0;
+  margin-bottom: 0;
+  margin-top: 0.1em;
+}
+
+#tablist li {
+  list-style: none;
+  display: inline;
+  margin: 0;
+}
+
+#tablist li a {
+  text-decoration: none;
+  padding: 3px 0.5em;
+  margin-right: 1px;
+  border-bottom: none;
+  background: white;
+}
+
+#tablist li a:link, #tablist li a:visited {
+  color: navy;
+}
+
+#tablist li a:hover {
+  color: #FFFFFF;
+  background: #336699;
+}
+
+#tablist li a.current {
+  background: lightyellow;
+}
+
+#menu {
+  color: #ffffff;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  text-align: center;
+  background-color: #336699;
+  border-bottom: 5px solid #ffffff;
+  border-top: 5px solid #ffffff;
+}
+
+#header {
+  padding-top: 5px;
+  padding-left: 5px;
+  background-image: url(../images/varicent_logo.jpg); 
+  background-repeat: no-repeat;
+}
+
+#container {
+  border: 3px solid #CCC;
+}
+
+
+#footer {
+  border-top: 3px solid #CCCCCC;
+  padding-top: 10px;
+  padding-left: 5px;
+  padding-bottom: 10px;
+  background: #EEE;
+}
+

@@ -1,0 +1,56 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import net.liftweb.util._
+import DB._
+import java.sql.Connection
+import net.liftweb.example.model._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+ 
+
+/** * The singleton that has methods for accessing the database */
+object Task extends Task with KeyedMetaMapper[long, Task] {
+  override def dbTableName = "tasks" // define the DB table name
+  
+  override def fieldOrder =  List(id, projectID, name, notes)
+
+  val sitemap = List(
+    Menu(Loc("ListTask", "/timesheets/tasks/list", "List Tasks", If(User.loggedIn_? _, "Please login"))),
+    Menu(Loc("CreateTask", "/timesheets/tasks/add", "Create Task ", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("EditTask", "/timesheets/tasks/edit", "Edit Task ", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("ViewTask", "/timesheets/tasks/view", "View Task", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("DeleteTask", "/timesheets/tasks/delete", "Delete Task", If(User.loggedIn_? _, "Please login"), Hidden)))
+}
+
+/** * An O-R mapped wiki entry */
+class Task extends KeyedMapper[Long, Task] {
+  def getSingleton = Task // what's the "meta" object
+  def primaryKeyField = id
+
+  object id extends MappedLongIndex(this)
+
+  object projectID extends MappedLongForeignKey(this, Project)
+  {
+    override def displayName = "Project Name"
+	  override def asHtml = {
+			<tt>{Project.find(By(Project.id, this)).map(pp => "(" + pp.code + ") " + pp.name.is).openOr(Text("ProjectName"))}</tt>
+		}
+    override def validSelectValues: Can[List[(Long, String)]] = Full (Project.findAll.map(c => (c.id.is, "(" + c.code.is + ") " + c.name.is))) 
+  }
+
+  
+  // the name of the entry
+  object name extends MappedString(this, 32) {
+    override def displayName = "Task Name"
+    override def dbIndexed_? = true // indexed in the DB
+  }
+  
+  // the text of the entry
+  object notes extends MappedTextarea(this, 4096) {
+    override def displayName = "Comments"
+    override def textareaRows  = 10
+    override def textareaCols = 50
+  }
+}

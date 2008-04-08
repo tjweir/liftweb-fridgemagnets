@@ -1,0 +1,47 @@
+8
+
+dir
+38
+http://svn.tjweir.beanstalkapp.com/timetracker/src/main/webapp/WEB-INF
+http://svn.tjweir.beanstalkapp.com/timetracker
+
+
+
+2008-01-18T19:13:18.279410Z
+1
+root
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+6a93a8ee-0344-0410-b229-a77dd4893564
+
+lib
+dir
+
+web.xml
+file
+
+
+
+
+2008-01-18T19:13:30.217672Z
+25bd9d17d98f24a0a19094c76054e6d4
+2008-01-18T19:13:18.279410Z
+1
+root
+has-props
+
+classes
+dir
+

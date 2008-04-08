@@ -1,0 +1,84 @@
+package bootstrap.liftweb
+
+import net.liftweb.util.{Helpers, Can, Full, Empty, Failure, Log}
+import net.liftweb.http._
+import Helpers._
+import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
+import java.sql.{Connection, DriverManager}
+import scala.collection.immutable.TreeMap
+import net.liftweb.example.model._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+ 
+/**
+  * A class that's instantiated early and run.  It allows the application
+  * to modify lift's environment
+  */
+class Boot {
+  def boot {
+    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor) 
+
+    LiftRules.addToPackages("net.liftweb.example")
+    Schemifier.schemify(true, Log.infoF _, User, Project, Task, Client, Contact, Day, Timecode, Dept, Location)
+
+    val entries = Menu(Loc("Home", "/", "Home")) ::
+		Menu(Loc("Reports", "/timesheets/report", "Reports")) ::
+		Menu(Loc("ReportList", "/timesheets/reports/list", "Report List", Hidden)) ::
+		Menu(Loc("ReportBill", "/timesheets/reports/billable", "Billable", Hidden)) ::
+		Menu(Loc("ReportMonthly", "/timesheets/reports/monthly", "Monthly", Hidden)) :: 
+    User.sitemap ::: Client.sitemap ::: Contact.sitemap ::: Project.sitemap ::: Task.sitemap ::: Day.sitemap
+
+
+		LiftRules.setSiteMap(SiteMap(entries:_*))
+    LiftRules.addTemplateBefore(User.templates)
+
+    S.addAround(User.requestLoans)   
+  }
+}
+
+/* Derby - In Memory database */
+/*
+object DBVendor extends ConnectionManager {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+    try {
+      Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
+      val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
+      Full(dm)
+    } catch {
+      case e : Exception => e.printStackTrace; Empty
+    }
+  }
+  def releaseConnection(conn: Connection) {conn.close}
+}
+*/
+
+/* MySql */
+object DBVendor extends ConnectionManager {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+    try {
+      Class.forName("com.mysql.jdbc.Driver")
+      val dm = DriverManager.getConnection("jdbc:mysql://localhost:3306/intra1", "liftweb", "xhm7r8so")
+      Full(dm)
+    } catch {
+      case e : Exception => e.printStackTrace; Empty
+    }
+  }
+  def releaseConnection(conn: Connection) { conn.close }
+}
+
+/* Postgres */
+/*
+object DBVendor extends ConnectionManager {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+    try {
+      Class.forName("org.postgresql.Driver")
+      val dm = DriverManager.getConnection("jdbc:postgresql://localhost/tt?user=postgres&password=postgres")
+      Full(dm)
+    } catch {
+      case e : Exception => e.printStackTrace; Empty
+    }
+  }
+  def releaseConnection(conn: Connection) { conn.close }
+}
+
+*/

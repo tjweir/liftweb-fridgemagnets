@@ -1,0 +1,97 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift='http://liftweb.net'>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+
+    <title>
+      Braaaawr!!!!! Magnets!!!!
+    </title>
+
+    <!-- STYLE -->
+    <!-- <link rel="stylesheet" href="/style/style.css" type="text/css" media="screen" title="core css file" charset="utf-8" /> -->
+
+    <link rel="stylesheet" href="/style/screen.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="/style/print.css" type="text/css" media="print" />    
+    <!--[if IE]><link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen" /><![endif]-->
+
+    <link rel="stylesheet" href="/style/table-style.css" type="text/css" media="screen" title="core css file" charset="utf-8" />
+    <link rel="stylesheet" href="/style/date_input.css" type="text/css" media="screen" title="core css file" charset="utf-8" />
+    <link rel="stylesheet" href="/style/tyler.css" type="text/css" media="screen" title="core css file" charset="utf-8" />
+  
+    <link rel="stylesheet" href="/style/plugins/fancy-type/screen.css" type="text/css" media="screen" />    
+    <link rel="stylesheet" href="/style/plugins/css-classes/css-classes.css" type="text/css" media="screen" />    
+    <link rel="stylesheet" href="/style/plugins/buttons/buttons.css" type="text/css" media="screen" />    
+
+    <!-- SCRIPT -->
+    <!--[if IE]><script language="javascript" type="text/javascript" src="/scripts/excanvas.js"></script><![endif]-->
+
+    <script src="/classpath/jquery.js" type="text/javascript" charset="utf-8"></script>	
+    <script src="/scripts/jquery.dimensions.js" type="text/javascript" charset="utf-8"></script>	
+    <script src="/scripts/ui.base.js" type="text/javascript" charset="utf-8"></script>	
+    <script src="/scripts/ui.draggable.js" type="text/javascript" charset="utf-8"></script>	
+    <script src="/scripts/ui.draggable.ext.js" type="text/javascript" charset="utf-8"></script>	
+
+
+  <script>
+  $(document).ready(function(){
+    $(".magnet").draggable();
+  });
+  </script>
+
+  <style>
+    .magnet { 
+      border: 1px solid black;
+      width: 50px;
+    }
+  </style>
+
+
+
+  </head>
+
+  <body>
+    <div class="container">
+
+    <div>
+      <div class="column span-24"><br /><br />
+        <center> <h1>Magnets!</h1> </center>
+      </div>
+
+      <hr />
+      <div class="column span-24 last">	
+        <lift:snippet type="Menu:builder" />
+      </div>
+
+      <div class="column span-24">
+        <div class="column span-6">&nbsp;</div>
+        <div class="column span-12">
+        <lift:snippet type="msgs">
+         <lift:error_msg>Error</lift:error_msg>
+         <lift:error_class>error</lift:error_class>
+         <lift:warning_msg>Warning</lift:warning_msg>
+         <lift:warning_class>warning</lift:warning_class>
+         <lift:notice_msg>Note</lift:notice_msg>
+         <lift:notice_class>notice</lift:notice_class>
+         </lift:snippet>
+       </div>
+        <div class="column span-6">&nbsp;</div>
+      </div>
+
+      <br />
+      <br />
+      <br />
+
+      <div id="content" class="column span-24">
+        <div class="column span-1">&nbsp;</div>
+        <div class="column span-21"><lift:bind name="content" /></div>
+        <div class="column span-1">&nbsp;</div>
+      </div>
+
+      <hr />
+      <div class="column span-24">2008</div>
+    </div>
+    </div>
+  </body>
+</html>
+

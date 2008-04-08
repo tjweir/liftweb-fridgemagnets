@@ -1,0 +1,101 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import DB._
+import java.sql.Connection
+import net.liftweb.util._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+import net.liftweb.http.S
+import java.text.SimpleDateFormat
+import S._
+ 
+//from DPP - field.obj.map(_.asHtml).openOr(Text(""))
+
+object Day extends Day with KeyedMetaMapper[long, Day] {
+  override def dbTableName = "days"
+  
+  override def fieldOrder = List(id, h_theDay, g_hours, f_projectID, e_taskID, d_department, c_timecode, b_location, a_notes)
+
+  val sitemap = List(
+    Menu(Loc("ListDay", "/timesheets/days/list", "List Days", If(User.loggedIn_? _, "Please login"))),
+    Menu(Loc("CreateDay", "/timesheets/days/add", "Create Day", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("ViewDay", "/timesheets/days/view", "View Day",  If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("EditDay", "/timesheets/days/edit", "Edit Day",  If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("DeleteDay", "/timesheets/days/delete", "Delete Day", If(User.loggedIn_? _, "Please login"), Hidden)))
+}
+
+class Day extends KeyedMapper[Long, Day] {
+  def getSingleton = Day
+  def primaryKeyField = id
+
+  object id extends MappedLongIndex(this)
+  object userID extends MappedLongForeignKey(this, User) {
+    override def dbDisplay_? = false
+	}
+
+  object h_theDay extends MappedDateTime(this) {
+    override def displayName = "Date"
+
+    override def _toForm: Can[NodeSeq] = Full(<input type='text' class='date_input' id='datepicker' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/> <tt>"MM/DD/YYYY"</tt>)  
+  }
+
+  object g_hours  extends MappedInt(this) {
+    override def displayName = "Hours"
+  }
+
+  object f_projectID extends MappedLongForeignKey(this, Project)
+  {
+    override def displayName = "Project Name"
+    override def asHtml = {
+			// Works - <tt>{Project.find(By(Project.id, this))}</tt>
+			<tt>{Project.find(By(Project.id, this)).map(pp => "(" + pp.code + ") " + pp.name.is).openOr(Text("ProjectName"))}</tt>
+    }
+		override def validSelectValues: Can[List[(Long, String)]] = Full(Project.findAll.map(c => (c.id.is, "(" + c.code.is + ") " + c.name.is))) 
+  }
+
+
+  object e_taskID extends MappedLongForeignKey(this, Task)
+  {
+    override def displayName = "Task Name"
+    override def asHtml = { 
+			<tt>{Task.find(By(Task.id, this)).map(pp => pp.name.is).openOr(Text("No task found."))}</tt>
+		}
+    override def validSelectValues: Can[List[(Long, String)]] = Full(Task.findAll.map(c => (c.id.is, c.name.is))) 
+  }
+
+  object d_department extends MappedLongForeignKey(this, Dept)
+  {
+    override def displayName = "Department"
+		override def asHtml = { 
+			<tt>{Dept.find(By(Task.id, this)).map(pp => pp.name.is).openOr(Text("No dept found."))}</tt>
+		}
+    override def validSelectValues: Can[List[(Long, String)]] = Full(Dept.findAll.map(c => (c.id.is, "[" + c.deptId.is + "] " + c.name.is))) 
+  }
+
+  object c_timecode extends MappedLongForeignKey(this, Timecode)
+  {
+    override def displayName = "Timecode"
+		override def asHtml = { 
+			<tt>{Timecode.find(By(Timecode.id, this)).map(pp => pp.name.is).openOr(Text("No timecode found."))}</tt>
+		}
+    override def validSelectValues: Can[List[(Long, String)]] = Full(Timecode.findAll.map(c => (c.id.is, "[" + c.timecodeId + "] " + c.name.is))) 
+  }
+
+
+  object b_location extends MappedLongForeignKey(this, Location)
+  {
+    override def displayName = "Location"
+		override def asHtml = { 
+			<tt>{Location.find(By(Location.id, this)).map(pp => pp.name.is).openOr(Text("No locations found!"))}</tt>
+		}
+    override def validSelectValues: Can[List[(Long, String)]] = Full(Location.findAll.map(c => (c.id.is, "[" + c.locationId + "] " + c.name.is))) 
+  }
+
+  object a_notes extends MappedTextarea(this, 4096) {
+    override def displayName = "Comments"
+    override def textareaRows  = 2
+    override def textareaCols = 50
+  }
+}

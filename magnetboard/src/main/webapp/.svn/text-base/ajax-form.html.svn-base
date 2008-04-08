@@ -1,0 +1,11 @@
+<lift:surround with="default" at="content">
+	<center><b>AJAX Form Update</b></center>
+	<br />
+	Choose city and state:<br/>
+	<lift:snippet type="AjaxForm:show" form="POST">
+	State: <select:state/>
+	City: <select:city/>
+	<select:submit />
+	</lift:snippet>
+	
+</lift:surround>

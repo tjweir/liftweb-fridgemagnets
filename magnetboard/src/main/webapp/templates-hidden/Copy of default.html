@@ -1,0 +1,81 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift='http://liftweb.net'>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<meta name="description" content="" />
+	<meta name="keywords" content="" />
+
+	<title>
+		<lift:snippet type="SheetUtil:UserIn" /> @ Varicent Software - Global Services
+	</title>
+
+  <lift:snippet type="Misc:includeStyle" /> 
+
+  <!-- <lift:snippet type="Misc:includeScript" />-->
+  <!--[if IE]><script language="javascript" type="text/javascript" src="/scripts/excanvas.js"></script><![endif]-->
+  <script src="/scripts/jquery.js" type="text/javascript" charset="utf-8"></script>	
+  <script src="/scripts/ui.datepicker.js" type="text/javascript" charset="utf-8"></script>	
+  <script src="/scripts/jquery.tablesorter.pack.js" type="text/javascript" charset="utf-8"></script>
+  <link rel="stylesheet" href="/style/ui.datepicker.css" type="text/css" media="screen" title="core css file" charset="utf-8" />
+
+  <script language="javascript" type="text/javascript" src="/scripts/jquery.flot.js"></script>
+
+	<script type="text/javascript" charset="utf-8">
+    jQuery(function($) { 
+        $('#example').tablesorter({sortList:[[0,0]], widgets:['zebra']}); 
+    });
+	</script>
+</head>
+
+
+<body>
+  <div id="user_header">
+    <div id="identity">
+      User: <lift:snippet type="SheetUtil:UserIn" /> | <a href="/user_mgt/edit" >Edit Settings</a> | <a href="/help" >Help</a> | <a href="/user_mgt/logout">Logout</a>
+    </div>
+  </div>
+
+	<div id="container">
+		<div id="header">
+      <h1><i>Global Services Intranet: Timesheets - <lift:snippet type="SheetUtil:UserIn" /></i></h1>
+		</div>
+<!--		<div id="tabs">
+		  <ul>
+		    <li><a href="/timesheets" title="timesheets"><span>Timesheets</span></a></li>
+		    <li><a href="/timesheets/clients/list" title="clients"><span>Clients</span></a></li>
+		    <li><a href="/timesheets/contacts/list" title="contacts"><span>Contacts</span></a></li>
+		    <li><a href="/timesheets/projects/list" title="projects"><span>Projects</span></a></li>
+		    <li><a href="/timesheets/tasks/list" title="tasks"><span>Tasks</span></a></li>
+		    <li><a href="/timesheets/days/list" title="days"><span>Days</span></a></li>
+		  </ul>
+    </div> -->
+
+
+		<div id="content">
+      <h2>Date: <lift:snippet type="SheetUtil:today" /></h2>
+      <br />
+      <lift:bind name="content" /><br />
+    </div>
+
+    <div id="sidebar">	
+      <lift:snippet type="Menu:builder" />
+
+    	<div class="widget">
+			  <center><b>Group Chat</b></center><br />
+			  <lift:comet type="Chat">Chat Text</lift:comet>
+			</div>
+
+      <br />
+      <lift:snippet type="error_report">
+	  	<lift:error_msg>Error!  The details are</lift:error_msg>
+	  	<lift:error_class>errorBox</lift:error_class>
+	  	<lift:warning_msg>Whoops, I had a problem</lift:warning_msg>
+	  	<lift:warning_class>warningBox</lift:warning_class>
+	  	<lift:notice_msg>Note</lift:notice_msg>
+	  	<lift:notice_class>noticeBox</lift:notice_class>
+	  </lift:snippet>
+
+    </div>
+		<div id="footer">Copyright: <a href="mailto:tweir@varicent.com">Tyler Weir</a> 2008</div>
+	</div>
+</body>
+</html>

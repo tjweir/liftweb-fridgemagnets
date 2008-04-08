@@ -1,0 +1,98 @@
+package net.liftweb.example.snippet
+
+import net.liftweb.example.model._
+import scala.xml.{NodeSeq, Text, Group, Elem}
+import net.liftweb.http._
+import net.liftweb.http.S
+import net.liftweb.mapper._
+import net.liftweb.http.S._
+import net.liftweb.util.Helpers._
+import net.liftweb.util._
+
+class PickMonth extends StatefulSnippet {
+ val dispatch: DispatchIt = {
+    case "show" => show _
+  }
+
+  var year = "2008"
+  var month = "January"
+
+  def show(xhtml: NodeSeq): NodeSeq = {
+    <xml:group>
+      Year: {S.select(YearForm.years.map(s => (s,s)), Full(year), year = _)} Currently: {year}
+      <br/>
+      Month: {S.select(MonthForm.months.map(s => (s,s)), Full(month), month = _)} Currently: {month} 
+      <br />
+      {S.submit(?("Generate"), ignore => {}) }
+      {RepTest(MonthForm.monthsFor(month).head, year)}
+      <br/>
+
+    </xml:group>
+  }
+
+  def RepTest(m: String, y: String): NodeSeq = {
+    val q = """
+    select year(days.h_theday) as 'year', month(days.h_theday) as 'month', users.firstname, users.lastname, 
+    clients.name as 'client', projects.name, timecode.name, days.g_hours 
+    from days
+    left join users on days.userid = users.id
+    left join projects on days.f_projectid = projects.id
+    left join clients on projects.clientid = clients.id
+    left join timecode on days.c_timecode = timecode.id
+    where days.c_timecode = 1 and
+    year(days.h_theday) = '""" + y + "' and month(days.h_theday) = '" + m + "' order by year, month, clients.id"
+
+    val (columns, data) = DB.runQuery(q)
+      <table width="90%" class="tablesorter" id="example">
+    <thead><tr><th>Date</th><th>Name</th><th>Client</th><th>Project</th><th>Hours</th></tr></thead>
+		<tbody>
+      {if (data.length != 0) 
+        data.flatMap(u => <tr><td>{u(0)}-{if (u(1).length == 1) "0" + u(1) else u(1)}</td><td>{u(2)} {u(3)}</td><td>{u(4)}</td><td>{u(5)}</td><td>{u(7)}</td> </tr>)
+      else
+        <tr><td>No Data</td> <td></td><td></td> <td></td><td></td></tr>}
+    </tbody>
+    </table>
+  }
+
+  object YearForm {
+    val yearlisting = List( "2006" -> "2006",
+      "2007" -> "2007",
+      "2008" -> "2008",
+      "2009" -> "2009",
+      "2010" -> "2010",
+      "2011" -> "2011",
+      "2012" -> "2012",
+      "2013" -> "2013",
+      "2014" -> "2014",
+      "2015" -> "2015",
+      "2016" -> "2016",
+      "2017" -> "2017",
+      "2018" -> "2018")
+
+    val years = yearlisting.map(_._1).removeDuplicates
+    val defyear: String = years.head
+    def yearsFor(y: String): List[String] = yearlisting.filter(_._1 == y).map(_._2)
+  }
+
+  object MonthForm {
+    val monthlisting = List( "All" -> "", 
+      "January" -> "01",
+      "February" -> "02",
+      "March" -> "03",
+      "April" -> "04",
+      "May" -> "05",
+      "June" -> "06",
+      "July" -> "07",
+      "August" -> "08",
+      "September" -> "09",
+      "October" -> "10",
+      "November" -> "11",
+      "December" -> "12")
+
+    val months = monthlisting.map(_._1).removeDuplicates
+    val defmonth: String = months.head
+    def monthsFor(m: String): List[String] = monthlisting.filter(_._1 == m).map(_._2)
+  }
+
+}
+

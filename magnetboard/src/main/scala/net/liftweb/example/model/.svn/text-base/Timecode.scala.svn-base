@@ -1,0 +1,39 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import DB._
+import java.sql.Connection
+import net.liftweb.example.model._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+ 
+/** * The singleton that has methods for accessing the database */
+object Timecode extends Timecode with KeyedMetaMapper[long, Timecode] {
+  override def dbTableName = "timecode" // define the DB table name
+  
+  override def fieldOrder = List(id, timecodeId , name)
+}
+
+/** * An O-R mapped wiki entry */
+class Timecode extends KeyedMapper[Long, Timecode] {
+  def getSingleton = Timecode // what's the "meta" object
+  def primaryKeyField = id
+
+  // from DPP - field.obj.map(_.asHtml).openOr(Text(""))
+  // asHTML =
+
+
+  // the primary key
+  object id extends MappedLongIndex(this)
+
+  object timecodeId extends MappedString(this, 32) {
+    override def displayName = "Code"  
+  }
+  
+
+  object name extends MappedString(this, 64) {
+    override def displayName = "Timecode Name"
+    override def dbIndexed_? = true // indexed in the DB
+  }
+}

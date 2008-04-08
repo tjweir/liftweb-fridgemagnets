@@ -1,0 +1,342 @@
+package net.liftweb.example.snippet
+
+import net.liftweb.example.model._
+import scala.xml.{NodeSeq, Text, Group}
+import net.liftweb.http._
+import net.liftweb.http.S
+import net.liftweb.mapper._
+import net.liftweb.http.S._
+import net.liftweb.util.Helpers._
+import net.liftweb.util._
+import java.util.Locale
+
+class SheetUtil {
+  private object selectedProject extends RequestVar[Project](Empty)
+  private object selectedUser extends RequestVar[User](Empty)
+  private object selectedTask extends RequestVar[Task](Empty)
+  private object selectedClient extends RequestVar[Client](Empty)
+  private object selectedWeek extends RequestVar[Week](Empty)
+
+
+  // Projects
+  def ProjectAdd(xhtml: Group): NodeSeq =
+    selectedProject.openOr(new Project).toForm(Empty, saveProject _) ++ <tr>
+      <td><a href="/timesheets/projects/">Cancel</a></td>
+      <td><input type="submit" value="Create" /></td>
+      </tr>
+
+  // called when the form is submitted
+  private def saveProject(project: Project) = 
+    project.validate match {
+    // no validation errors, save the user, and go
+    // back to the "list" page
+    case Nil => project.save; redirectTo("/timesheets/projects/")
+
+    // oops... validation errors
+    // display the errors and make sure our selected user is still the same
+    case x => error(x); selectedProject(project)
+  }
+
+
+  def ProjectEdit(xhtml: Group): NodeSeq =
+    selectedProject.map(_.toForm(Empty, saveProject _) ++ <tr>
+       <td><a href="/timesheets/projects/">Cancel</a></td>
+      <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Project was not found"); redirectTo("/timesheets/projects")}
+
+
+  def ProjectConfirmDelete(xhtml: Group): NodeSeq = {
+    (for (project <- selectedProject.is)
+      yield
+      {
+        def deleteProject(ignore: String)
+        {
+          notice("Project (" + project.code + ") " + project.name + " deleted")
+          project.delete_!
+          redirectTo("/timesheets/projects/")
+        }
+
+        bind("xmp", xhtml, 
+          "projectcode" --> ("(" + project.code.is + ") " + project.name.is),
+          "delete" --> submit("Delete", deleteProject))
+
+
+      }) openOr {error("Project not found"); redirectTo("/timesheets/projects/")}
+  }
+  
+  def ProjectList: NodeSeq = {
+    Project.find() match {
+    case Empty => Project.create.code("DEF001").name("Default Project").save
+    case _ =>
+    }
+    <tr>{Project.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
+    Project.findAll(OrderBy(Project.id, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/projects/edit", () => selectedProject(u), Text("Edit"))}</td>
+        <td>{link("/timesheets/projects/delete", () => selectedProject(u), Text("Delete"))}</td>
+      </tr>)
+  }
+
+ 
+
+  // ===================================================================================
+  // Tasks
+  // ===================================================================================
+  def TaskAdd(xhtml: Group): NodeSeq =
+    selectedTask.openOr(new Task).toForm(Empty, saveTask _) ++ <tr>
+      <td><a href="/timesheets/tasks/">Cancel</a></td>
+      <td><input type="submit" value="Create" /></td>
+      </tr>
+
+
+  // called when the form is submitted
+  private def saveTask(task: Task) = 
+    task.validate match {
+    // no validation errors, save the user, and go
+    // back to the "list" page
+    case Nil => task.save; redirectTo("/timesheets/tasks/")
+
+    // oops... validation errors
+    // display the errors and make sure our selected user is still the same
+    case x => error(x); selectedTask(task)
+  }
+
+
+  def TaskEdit(xhtml: Group): NodeSeq =
+    selectedTask.map(_.toForm(Empty, saveTask _) ++ <tr>
+       <td><a href="/timesheets/tasks/">Cancel</a></td>
+      <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Task was not found"); redirectTo("/timesheets/tasks/")}
+
+
+  def TaskConfirmDelete(xhtml: Group): NodeSeq = {
+    (for (task <- selectedTask.is)
+      yield
+      {
+        def deleteTask(ignore: String)
+        {
+          notice("Task " + task.name + " deleted.")
+          task.delete_!
+          redirectTo("/timesheets/tasks/")
+        }
+
+        bind("xmp", xhtml, 
+          "taskcode" --> (task.name.is),
+          "delete" --> submit("Delete", deleteTask))
+      }) openOr {error("Task not found"); redirectTo("/timesheets/tasks/")}
+  }
+ 
+
+  def TaskList: NodeSeq = {
+    Task.find() match {
+    case Empty => Task.create.name("Default Task").save
+    case _ =>
+    }
+    <tr>{Task.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
+    Task.findAll(OrderBy(Task.projectID, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/tasks/edit", () => selectedTask(u), Text("Edit"))}</td>
+        <td>{link("/timesheets/tasks/delete", () => selectedTask(u), Text("Delete"))}</td>
+      </tr>)
+  }
+
+
+
+
+  // ===================================================================================
+  // Clients
+  // ===================================================================================
+  def ClientAdd(xhtml: Group): NodeSeq =
+    selectedClient.openOr(new Client).toForm(Empty, saveClient _) ++ <tr>
+      <td><a href="/timesheets/clients/">Cancel</a></td>
+      <td><input type="submit" value="Create" /></td>
+      </tr>
+
+
+  // called when the form is submitted
+  private def saveClient(client: Client) = 
+    client.validate match {
+      case Nil => client.save; redirectTo("/timesheets/clients/")
+      case x => error(x); selectedClient(client)
+  }
+
+
+  def ClientEdit(xhtml: Group): NodeSeq =
+    selectedClient.map(_.toForm(Empty, saveClient _) ++ <tr>
+       <td><a href="/timesheets/clients/">Cancel</a></td>
+      <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Client was not found"); redirectTo("/timesheets/clients/")}
+
+
+  def ClientConfirmDelete(xhtml: Group): NodeSeq = {
+    (for (client <- selectedClient.is)
+      yield
+      {
+        def deleteClient(ignore: String)
+        {
+          notice("Client " + client.name + " deleted.")
+          client.delete_!
+          redirectTo("/timesheets/clients/")
+        }
+
+        bind("xmp", xhtml, 
+          "clientname" --> (client.name.is),
+          "delete" --> submit("Delete", deleteClient))
+      }) openOr {error("Client not found"); redirectTo("/timesheets/clients/")}
+  }
+ 
+
+  def ClientList: NodeSeq = {
+    Client.find() match {
+      case Empty => Client.create.name("Default Client").save
+      case _ =>
+    }
+
+    <tr>{Client.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
+    Client.findAll(OrderBy(Client.name, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/clients/edit", () => selectedClient(u), Text("Edit"))}</td>
+        <td>{link("/timesheets/clients/delete", () => selectedClient(u), Text("Delete"))}</td>
+      </tr>)
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // Weeks
+  def WeekAdd() {}
+  def WeekConfirmDelete() {}
+  def WeekList() {}
+  def WeekEdit() {}
+ 
+
+  /**
+   * Get the XHTML containing a list of users
+   */
+  def users: NodeSeq = {
+    User.find() match {
+      case Empty => User.create.firstName("Archer").lastName("Dog").email("archer@dogfood.com").password("mypassword").save
+      case _ =>
+    }
+    // the header
+    <tr>{User.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
+  // get and display each of the users
+  User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine} 
+		       <td>{link("/simple/edit", () => selectedUser(u), Text("Edit"))}</td>
+		       <td>{link("/simple/delete", () => selectedUser(u), Text("Delete"))}</td>
+		       </tr>)
+  }
+   
+  /**
+   * Confirm deleting a user
+   */
+  def confirmDelete(xhtml: Group): NodeSeq = {      
+    (for (user <- selectedUser.is) // find the user
+     yield { 
+       def deleteUser(ignore: String) {
+         notice("User "+(user.firstName+" "+user.lastName)+" deleted")
+         user.delete_!
+         redirectTo("/simple/index.html")
+       }
+       
+       // bind the incoming XHTML to a "delete" button.
+       // when the delete button is pressed, call the "deleteUser"
+       // function (which is a closure and bound the "user" object
+       // in the current content)
+       bind("xmp", xhtml, "username" --> (user.firstName.is+" "+user.lastName.is),
+	    "delete" --> submit("Delete", deleteUser))
+       
+       // if the was no ID or the user couldn't be found,
+       // display an error and redirect
+     }) openOr {error("User not found"); redirectTo("/simple/index.html")}
+   }
+  
+  // called when the form is submitted
+  private def saveUser(user: User) = user.validate match {
+             // no validation errors, save the user, and go
+             // back to the "list" page
+             case Nil => user.save; redirectTo("/simple/index.html")
+
+             // oops... validation errors
+             // display the errors and make sure our selected user is still the same
+             case x => error(x); selectedUser(user)
+           }
+
+  /**
+    * Add a user
+    */
+  def add(xhtml: Group): NodeSeq = 
+    selectedUser.openOr(new User).toForm(Empty, saveUser _) ++ <tr> 
+    <td><a href="/simple/index.html">Cancel</a></td>
+    <td><input type="submit" value="Create"/></td>
+    </tr>    
+
+  /**
+   * Edit a user
+   */
+  def edit(xhtml: Group): NodeSeq = 
+    selectedUser.map(_.
+	 // get the form data for the user and when the form
+	 // is submitted, call the passed function.
+	 // That means, when the user submits the form,
+	 // the fields that were typed into will be populated into
+	 // "user" and "saveUser" will be called.  The
+	 // form fields are bound to the model's fields by this
+	 // call.
+         toForm(Empty, saveUser _) ++ <tr> 
+           <td><a href="/simple/index.html">Cancel</a></td>
+           <td><input type="submit" value="Save"/></td>
+         </tr>
+
+       // bail out if the ID is not supplied or the user's not found
+     ) openOr {error("User not found"); redirectTo("/simple/index.html")}
+  
+  // the request-local variable that hold the file parameter
+  private object theUpload extends RequestVar[FileParamHolder](Empty)
+  
+  /**
+    * Bind the appropriate XHTML to the form
+    */
+  def upload(xhtml: Group): NodeSeq = if (S.get_?) bind("ul", chooseTemplate("choose", "get", xhtml), 'file_upload --> fileUpload(ul => theUpload(ul)))
+  else bind("ul", chooseTemplate("choose", "post", xhtml),
+      "file_name" --> theUpload.map(v => Text(v.fileName)),
+      "mime_type" --> theUpload.map(v => Text(v.mimeType)),
+      "length" --> theUpload.map(v => Text(v.file.length.toString)),
+      "md5" --> theUpload.map(v => Text(hexEncode(md5(v.file))))
+      );
+
+  private def setLocale(lc: String) {
+    Locale.getAvailableLocales.filter(_.toString == lc).toList match {
+      case x :: xs => definedLocale(x)
+      case _ => definedLocale(Empty)
+    }
+  }
+  
+  def lang(xhtml: Group): NodeSeq = bind("showLoc", xhtml,
+      "lang" --> locale.getDisplayLanguage(locale),
+      "select" --> S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
+        map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))  
+      
+}
+
+
+

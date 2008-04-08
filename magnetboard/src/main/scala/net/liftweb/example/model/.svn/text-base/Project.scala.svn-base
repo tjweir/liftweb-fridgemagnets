@@ -1,0 +1,56 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import net.liftweb.util._
+import DB._
+import java.sql.Connection
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+ 
+object Project extends Project with KeyedMetaMapper[long, Project] {
+  override def dbTableName = "projects" // define the DB table name
+  override def fieldOrder = List(id, code, name, notes)
+
+  val sitemap = List(
+    Menu(Loc("ListProject", "/timesheets/projects/list", "List Projects", If(User.loggedIn_? _, "Please login"))),
+    Menu(Loc("CreateProject", "/timesheets/projects/add", "Create A Project", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("ViewProject", "/timesheets/projects/view", "View Project", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("EditProject", "/timesheets/projects/edit", "Edit Project", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("DeleteProject", "/timesheets/projects/delete", "Delete Project", If(User.loggedIn_? _, "Please login"), Hidden)))
+}
+
+/** * O-R */
+class Project extends KeyedMapper[Long, Project] {
+  def getSingleton = Project // what's the "meta" object
+  def primaryKeyField = id
+
+  object id extends MappedLongIndex(this)
+  
+  object code extends MappedString(this, 255) {
+    override def displayName = "Project Code"
+  }
+
+  object name extends MappedString(this, 255) {
+    override def displayName = "Project Name"
+    override def dbIndexed_? = true // indexed in the DB
+  }
+
+  object clientID extends MappedLongForeignKey(this, Client)
+  {
+    override def displayName = "Client Name"
+	  override def asHtml = {
+			<tt>{Client.find(By(Client.id, this)).map(pp => pp.name.is).openOr(Text("ClientName"))}</tt>
+		}
+    override def validSelectValues: Can[List[(Long, String)]] = Full (Client.findAll.map(c => (c.id.is, c.name.is))) 
+  }
+
+  object notes extends MappedTextarea(this, 4096) {
+    override def displayName = "Comments"
+    override def textareaRows  = 10
+    override def textareaCols = 50
+  }
+
+  // Task list - how do I map a one-to-many relation?
+  // Stick the ID of the project in the Task table
+}

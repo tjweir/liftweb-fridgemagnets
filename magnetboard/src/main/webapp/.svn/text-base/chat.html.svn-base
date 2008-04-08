@@ -1,0 +1,153 @@
+<lift:surround with="default" at="content">
+<div class="widget">
+	<center><b>Group Chat</b></center><br />
+	<lift:comet type="Chat" name="Other">Chat Text</lift:comet>
+</div>
+<p>The total chat app, including the ask/answer component for soliciting a name
+comments, etc. is 68 lines of code.  There is no special code to support AJAX/Comet
+(all the wrapping is done automatically by <i>lift</i>.</p>
+
+<p>When the Chat comet widget is added to the page, it needs to solict the
+user for a "chat name".  It asks the "AskName" comet widget for the name.
+Until the AskName comet widget provides a name, all rendering messages
+are forwarded to AskName.
+Here's the code for the "AskName":</p>
+
+    <style type="text/css">
+    <!--
+      .constant {
+        /* font-lock-constant-face */
+        color: #5f9ea0;
+      }
+      .function-name {
+        /* font-lock-function-name-face */
+        color: #87ceeb;
+      }
+      .keyword {
+        /* font-lock-keyword-face */
+        color: #6495ed;
+        font-weight: bold;
+      }
+      .string {
+        /* font-lock-string-face */
+        color: #32cd32;
+      }
+      .type {
+        /* font-lock-type-face */
+        color: #9290ff;
+      }
+      .variable-name {
+        /* font-lock-variable-name-face */
+        color: #98fb98;
+      }
+
+    -->
+    </style>
+    <pre>
+<span class="keyword">class</span> <span class="type">AskName</span> <span class="keyword">extends</span> <span class="type">CometActor</span> {
+  <span class="keyword">def</span> <span class="function-name">render</span> = ajaxForm(&lt;div&gt;What is your username?&lt;/div&gt; ++ 
+                             text("",name => answer(name.trim)) ++ 
+                             submit("Enter", ignore => true))
+}
+</pre>
+
+<p>When the user submits the form, the question asked by the Chat comet widget
+is answered with the value the user submitted.  This is
+similar to the ask/answer paradigm in Seaside, except that there's
+no need for continuations.</p>
+
+<p>Now, onto the heart of the chat app:</p>
+    <pre>
+<span class="keyword">class</span> <span class="type">Chat</span> <span class="keyword">extends</span> <span class="type">CometActor</span> {
+  <span class="keyword">private</span> <span class="keyword">var</span> <span class="variable-name">userName</span> = <span class="string">""</span>
+  <span class="keyword">private</span> <span class="keyword">var</span> <span class="variable-name">currentData</span>: <span class="type">List[ChatLine]</span> = Nil
+  
+  <span class="keyword">private</span> <span class="keyword">val</span> <span class="variable-name">server</span> = {
+    <span class="keyword">val</span> <span class="variable-name">ret</span> = ChatServer.server
+    ret !? ChatServerAdd(<span class="keyword">this</span>) <span class="keyword">match</span> {
+      <span class="keyword">case</span> <span class="type">ChatServerUpdate</span>(<span class="variable-name">value</span>) =&gt; currentData = value
+      <span class="keyword">case</span> <span class="variable-name">_</span> =&gt; {}
+    }
+    ret
+  }
+  
+
+  <span class="keyword">override</span> <span class="keyword">def</span> <span class="function-name">lowPriority</span> : <span class="type">PartialFunction[Any, Unit]</span> = {
+      <span class="keyword">case</span> <span class="type">ChatServerUpdate</span>(<span class="variable-name">value</span>) =&gt; {
+        currentData = value
+        reRender
+        loop
+      }
+    } 
+  
+  <span class="keyword">def</span> <span class="function-name">render</span> = {
+    <span class="keyword">val</span> <span class="variable-name">inputName</span> = <span class="keyword">this</span>.uniqueId+<span class="string">"_msg"</span>
+    <span class="keyword">val</span> <span class="variable-name">ret</span> = &lt;span&gt;Hello {userName}&lt;ul&gt;{
+      currentData.reverse.map{
+        cl =&gt;
+        &lt;li&gt;{hourFormat(cl.when)} {cl.user}: {cl.msg}&lt;/li&gt;
+      }.toList
+    }&lt;/ul&gt;&lt;lift:form method=<span class="string">"POST"</span>&gt;
+    &lt;input name={inputName} <span class="keyword">type</span>=<span class="string">"text"</span> value=<span class="string">""</span>/&gt;&lt;input value=<span class="string">"Send"</span> <span class="keyword">type</span>=<span class="string">"submit"</span>/&gt;
+    &lt;/lift:form&gt;&lt;/span&gt;
+
+    XmlAndMap(ret, TreeMap(inputName -&gt; sendMessage))
+  }
+  
+  <span class="keyword">override</span> <span class="keyword">def</span> <span class="function-name">localSetup</span> {
+    <span class="keyword">if</span> (userName.length == 0) {
+    ask(<span class="keyword">new</span> AskName, <span class="string">"what's your username"</span>) {
+      answer =&gt;
+      answer <span class="keyword">match</span> {
+        <span class="keyword">case</span> <span class="variable-name">s</span> : <span class="type">String </span><span class="keyword">if</span> (s.length &gt; 2) =&gt; userName = s; <span class="constant">true</span>
+        <span class="keyword">case</span> <span class="variable-name">_</span> =&gt; localSetup; <span class="constant">false</span>
+      }
+    }
+    }
+  }
+  
+  <span class="keyword">def</span> <span class="function-name">waitForUpdate</span> : <span class="type">Option[List[ChatLine]]</span> = {
+    receiveWithin(100) {
+      <span class="keyword">case</span> <span class="type">ChatServerUpdate</span>(<span class="variable-name">l</span>) =&gt; Some(l)
+      <span class="keyword">case</span> <span class="type">TIMEOUT</span> =&gt; None
+    }
+  }
+  
+  <span class="keyword">def</span> <span class="function-name">sendMessage</span>(<span class="variable-name">in</span>: <span class="type">List[String]</span>) = {
+      server ! ChatServerMsg(userName, in.head)
+      waitForUpdate <span class="keyword">match</span> {
+        <span class="keyword">case</span> <span class="type">Some</span>(<span class="variable-name">l</span> : <span class="type">List[ChatLine]</span>) =&gt; currentData = l ; <span class="constant">true</span>
+        <span class="keyword">case</span> <span class="variable-name">_</span> =&gt; <span class="constant">false</span>
+      }
+    }
+}
+</pre>
+
+<p><code>server</code> is a value (calculated at instantiation and unchanged) that
+contains the Chat server shared by all the Chat comet clients.</p>
+
+<p><code>lowPriority</code> defines what happens when we receive a
+message from another Actor.  In this case, when the Chat server
+receives a new posting, it sends a message to all the Chat comet wigets.
+When the Chat comet widget receives the message, it notifies the containing
+page (via <code>reRender</code>) of the new content.</p>
+
+<p><code>render</code> yields the XHTML and parameter to function map.</p>
+
+<p><code>localSetup</code> is called when the comet widget is instantiated
+or when it joins a new page (comet widgets can be shared across pages).
+Chat comet widget creates an AskName and askes it a question.  When
+AskName "answers" the question, the attached function will be called
+with the Answer to the question.</p>
+
+<p><code>sendMessage</code> is called when the user submits the
+form (enters a line in chat).  It sends a message to the
+Chat server, waits up to 100ms for the Chat server to send an
+update.  If the Chat server sends an update, the Chat client
+updates itself.</p>
+
+<p>This example demonstrates the power of Scala's Actors and <i>lift</i>.
+With very few lines of code, we've got a complete AJAX/Comet app that
+has Seaside style Ask/Answer for building modal dialogs.</p>
+
+</lift:surround>

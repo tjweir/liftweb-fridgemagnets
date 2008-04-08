@@ -1,0 +1,27 @@
+package net.liftweb.example.model
+
+import net.liftweb.mapper._
+import DB._
+import java.sql.Connection
+import net.liftweb.util._
+
+/* The singleton that has methods for accessing the database */  
+object User extends User with MetaMegaProtoUser[User, User with KeyedMetaMapper[Long, User]] {
+  override val dbTableName = "users"
+  override def screenWrap = Full(<lift:surround with="default" at="content"><lift:bind /></lift:surround>)
+  override def signupFields = firstName :: lastName :: email :: password :: Nil
+  override val skipEmailValidation = true
+}
+
+
+/*** An O-R mapped "User" class that includes first name, last name, password and we add a "Personal Essay" to it */
+class User extends MegaProtoUser[User] {
+  def getSingleton = User // what's the "meta" server
+  def primaryKeyField = id
+  def super_? : Boolean = superUser
+  
+  // define an additional field for a personal essay
+  object textArea extends MappedTextarea(this, 2048) {
+    override def dbDisplay_? = false
+  }
+}

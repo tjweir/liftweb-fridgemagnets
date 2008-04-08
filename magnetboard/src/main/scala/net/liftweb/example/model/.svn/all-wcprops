@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/timetracker/!svn/ver/33/src/main/scala/net/liftweb/example/model
+END
+Day.scala
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Day.scala
+END
+Client.scala
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Client.scala
+END
+User.scala
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/User.scala
+END
+Task.scala
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Task.scala
+END
+WikiEntry.scala
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/timetracker/!svn/ver/1/src/main/scala/net/liftweb/example/model/WikiEntry.scala
+END
+Project.scala
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Project.scala
+END
+Timecode.scala
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Timecode.scala
+END
+Contact.scala
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Contact.scala
+END
+Week.scala
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Week.scala
+END
+Dept.scala
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/timetracker/!svn/ver/49/src/main/scala/net/liftweb/example/model/Dept.scala
+END

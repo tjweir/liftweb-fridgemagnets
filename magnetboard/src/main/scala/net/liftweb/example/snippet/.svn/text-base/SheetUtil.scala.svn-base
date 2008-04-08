@@ -1,0 +1,504 @@
+package net.liftweb.example.snippet
+
+import net.liftweb.example.model._
+import scala.xml.{NodeSeq, Text, Group}
+import net.liftweb.http._
+import net.liftweb.http.S
+import net.liftweb.mapper._
+import net.liftweb.http.S._
+import net.liftweb.util.Helpers._
+import net.liftweb.util._
+import java.util.Locale
+
+class SheetUtil {
+  private object selectedProject extends RequestVar[Can[Project]](Empty)
+  private object selectedUser extends RequestVar[Can[User]](Empty)
+  private object selectedTask extends RequestVar[Can[Task]](Empty)
+  private object selectedClient extends RequestVar[Can[Client]](Empty)
+  private object selectedContact extends RequestVar[Can[Contact]](Empty)
+  private object selectedDay extends RequestVar[Can[Day]](Empty)
+
+	val theUser: User = User.currentUser.openOr(new User)
+
+  var taskRedir = "/timesheets/tasks/list"
+  var projRedir = "/timesheets/projects/list"
+  var clientRedir = "/timesheets/clients/list"
+  var contactRedir = "/timesheets/contacts/list"
+  var dayRedir = "/timesheets/days/list"
+
+  // add a static for the pre of the listing for TableSorter
+  var my = "foo" // this is hacky
+
+  def today = <span>{new java.util.Date}</span>
+  //def UserIn = <span>{ if(User.loggedIn_?) "User: " + selectedUser.lastName.is else "Please log in" }</span>
+	//def UserIn = <span>{User.currentUser.map(_.lastName).openOr("Not Logged In")}</span>
+	def UserIn = <span>{User.currentUser.map(u => u.firstName + " " + u.lastName).openOr("You are not logged in")}</span>
+  def needSuper = <h3>You need to be a Super User.</h3>
+
+  // ===================================================================================
+  // Projects - fieldOrder =  id :: code :: name :: notes :: Nil
+  // ===================================================================================
+  def ProjectAdd(xhtml: Group): NodeSeq = {
+    if(theUser.super_?) {
+      selectedProject.openOr(new Project).toForm(Empty, saveProject _) ++ 
+        <tr>
+          <td><a href={projRedir}>Cancel</a></td>
+          <td><input type="submit" value="Create" /></td>
+        </tr>
+    } else {
+      needSuper
+    }
+  }
+
+  private def saveProject(project: Project) = 
+    project.validate match 
+    {
+      case Nil => project.save; redirectTo(projRedir)
+      case x => error(x); selectedProject(Full(project))
+    }
+
+
+  def ProjectEdit(xhtml: Group): NodeSeq = {
+    if(theUser.super_?) {
+      selectedProject.map(_.toForm(Empty, saveProject _) ++ 
+      <tr>
+        <td><a href={projRedir}>Cancel</a></td>
+        <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Project was not found"); redirectTo(projRedir)}
+    } 
+    else {
+      needSuper
+    }
+  }
+
+
+  def ProjectView(xhtml: Group): NodeSeq = {
+    (for (project <- selectedProject.is)
+      yield
+      {
+        bind("xmp", xhtml, 
+          "projectcode" --> ("(" + project.code.is + ") " + project.name.is),
+          "projectnotes" --> (project.notes.is)
+        ) 
+      }) openOr {error("Project not found"); redirectTo(projRedir)}
+  }
+  
+  def ProjectConfirmDelete(xhtml: Group): NodeSeq = {
+    if(theUser.super_?) {
+    (for (project <- selectedProject.is)
+      yield
+      {
+        def deleteProject(ignore: String)
+        {
+          notice("Project (" + project.code + "/" + project.id + ") " + project.name + " deleted")
+          project.delete_!
+          redirectTo(projRedir)
+        }
+
+        bind("xmp", xhtml, 
+          "projectcode" --> ("(" + project.code.is + ") " + project.name.is),
+          "delete" --> submit("Delete", deleteProject))
+
+      }) openOr {error("No Project was found"); redirectTo(projRedir)}
+  }
+  else {
+    needSuper
+  }
+  }
+  
+  def ProjectList2: NodeSeq = {
+    Project.find() match {
+    case Empty => Project.create.code("DEF001").name("Default Project").save
+    case _ =>
+    }
+    <thead><tr>{Project.htmlHeaders}<th>View</th><th>Edit</th><th>Delete</th></tr></thead><tbody> {
+    Project.findAll(OrderBy(Project.id, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/projects/view", () => selectedProject(Full(u)), Text("View"))}</td>
+        <td>{link("/timesheets/projects/edit", () => selectedProject(Full(u)), Text("Edit"))}</td>
+        <td>{link("/timesheets/projects/delete", () => selectedProject(Full(u)), Text("Delete"))}</td>
+      </tr>)}</tbody>
+  }
+
+  def ProjectList: NodeSeq = {
+    Project.find() match {
+	    // If there are no projects, create a default one.
+    	case Empty => Project.create.code("DEF001").name("Default Project").save
+    	// else do the following stuff
+			case _ =>
+    }
+    <thead>
+			<tr>{Project.htmlHeaders}<th>View</th><th>Edit</th><th>Delete</th></tr>
+		</thead>
+		<tbody> {
+    	Project.findAll(OrderBy(Project.id, true)).flatMap(u => 
+      	<tr>{u.htmlLine}
+        	<td>{link("/timesheets/projects/view", () => selectedProject(Full(u)), Text("View"))}</td>
+        	<td>{link("/timesheets/projects/edit", () => selectedProject(Full(u)), Text("Edit"))}</td>
+        	<td>{link("/timesheets/projects/delete", () => selectedProject(Full(u)), Text("Delete"))}</td>
+      	</tr>)}
+		</tbody>
+  }
+
+ 
+
+  // ===================================================================================
+  // Tasks fieldOrder =  id :: projectID :: name :: notes :: Nil
+  // ===================================================================================
+
+
+  def TaskAdd(xhtml: Group): NodeSeq =
+    selectedTask.openOr(new Task).toForm(Empty, saveTask _) ++ <tr>
+      <td><a href={taskRedir}>Cancel</a></td>
+      <td><input type="submit" value="Create" /></td>
+      </tr>
+
+  private def saveTask(task: Task) = 
+    task.validate match {
+    case Nil => task.save; redirectTo(taskRedir)
+    case x => error(x); selectedTask(Full(task))
+  }
+
+  def TaskEdit(xhtml: Group): NodeSeq =
+    selectedTask.map(_.toForm(Empty, saveTask _) ++ <tr>
+       <td><a href="/timesheets/tasks/">Cancel</a></td>
+      <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Task was not found"); redirectTo(taskRedir)}
+
+  def TaskConfirmDelete(xhtml: Group): NodeSeq = {
+    (for (task <- selectedTask.is)
+      yield
+      {
+        def deleteTask(ignore: String)
+        {
+          notice("Task " + task.name + " deleted.")
+          task.delete_!
+          redirectTo(taskRedir)
+        }
+
+        bind("xmp", xhtml, 
+          "taskcode" --> (task.name.is),
+          "delete" --> submit("Delete", deleteTask))
+      }) openOr {error("Task not found"); redirectTo(taskRedir)}
+  }
+ 
+  def TaskList: NodeSeq = {
+    Task.find() match {
+    case Empty => Task.create.name("Default Task").save
+    case _ =>
+    }
+    <thead><tr>{Task.htmlHeaders}<th>View</th><th>Edit</th><th>Delete</th></tr></thead><tbody> {
+    Task.findAll(OrderBy(Task.projectID, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/tasks/view", () => selectedTask(Full(u)), Text("View"))}</td>
+        <td>{link("/timesheets/tasks/edit", () => selectedTask(Full(u)), Text("Edit"))}</td>
+        <td>{link("/timesheets/tasks/delete", () => selectedTask(Full(u)), Text("Delete"))}</td>
+      </tr>)}</tbody>
+  }
+
+   def TaskView(xhtml: Group): NodeSeq = {
+    (for (t <- selectedTask.is)
+      yield
+      {
+        bind("xmp", xhtml, 
+          "name" --> (t.name.is),
+          "pid" --> (t.projectID.is),
+          "notes" --> (t.notes.is)
+      )
+      }) openOr {error("Task not found"); redirectTo(taskRedir)}
+  }
+ 
+
+  // ===================================================================================
+  // Clients fieldOrder =  id :: name :: address :: city :: website :: notes :: Nil
+  // ===================================================================================
+  def ClientAdd(xhtml: Group): NodeSeq = {
+    if(theUser.super_?) {
+      selectedClient.openOr(new Client).toForm(Empty, saveClient _) ++ <tr>
+      <td><a href="/timesheets/clients/">Cancel</a></td>
+      <td><input type="submit" value="Create" /></td>
+      </tr>
+    }
+    else {
+      needSuper
+    }
+  }
+
+  // called when the form is submitted
+  private def saveClient(client: Client) = 
+    client.validate match {
+      case Nil => client.save; redirectTo("/timesheets/clients/list")
+      case x => error(x); selectedClient(Full(client))
+  }
+
+  def ClientEdit(xhtml: Group): NodeSeq = {
+    if(theUser.super_?) {
+      selectedClient.map(_.toForm(Empty, saveClient _) ++ <tr>
+      <td><a href="/timesheets/clients/">Cancel</a></td>
+      <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Client was not found"); redirectTo("/timesheets/clients/list")}
+    } else {
+      needSuper
+    }
+  }
+
+  def ClientConfirmDelete(xhtml: Group): NodeSeq = {
+    if(theUser.super_?) {
+      (for (client <- selectedClient.is)
+        yield
+        {
+          def deleteClient(ignore: String)
+          {
+            notice("Client " + client.name + " deleted.")
+            client.delete_!
+            redirectTo("/timesheets/clients/")
+          }
+
+          bind("xmp", xhtml, 
+            "clientname" --> (client.name.is),
+            "delete" --> submit("Delete", deleteClient))
+        }) openOr {error("Client not found"); redirectTo("/timesheets/clients/list")}
+    } else {
+      needSuper
+    }
+  }
+ 
+
+  def ClientList: NodeSeq = {
+    Client.find() match {
+      case Empty => Client.create.name("Default Client").save
+      case _ =>
+    }
+
+    <thead><tr>{Client.htmlHeaders}<th>View</th><th>Edit</th><th>Delete</th></tr></thead><tbody> {
+    Client.findAll(OrderBy(Client.name, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/clients/view", () => selectedClient(Full(u)), Text("View"))}</td>
+        <td>{link("/timesheets/clients/edit", () => selectedClient(Full(u)), Text("Edit"))}</td>
+        <td>{link("/timesheets/clients/delete", () => selectedClient(Full(u)), Text("Delete"))}</td>
+    </tr>)} </tbody>
+  }
+
+   def ClientView(xhtml: Group): NodeSeq = {
+    (for (t <- selectedClient.is)
+      yield
+      {
+        bind("xmp", xhtml, 
+          "name" --> (t.name.is),
+          "notes" --> (t.notes.is)
+      )
+      }) openOr {error("Task not found"); redirectTo("/timesheets/tasks/list")}
+  }
+ 
+
+  // ===================================================================================
+  // Contacts fieldOrder =  id :: name :: address :: city :: website :: notes :: Nil
+  // ===================================================================================
+  def ContactAdd(xhtml: Group): NodeSeq =
+    selectedContact.openOr(new Contact).toForm(Empty, saveContact _) ++ <tr>
+      <td><a href="/timesheets/contacts/">Cancel</a></td>
+      <td><input type="submit" value="Create" /></td>
+      </tr>
+
+
+  // called when the form is submitted
+  private def saveContact(contact: Contact) = 
+    contact.validate match {
+      case Nil => contact.save; redirectTo("/timesheets/contacts/list")
+      case x => error(x); selectedContact(Full(contact))
+  }
+
+
+  def ContactEdit(xhtml: Group): NodeSeq =
+    selectedContact.map(_.toForm(Empty, saveContact _) ++ <tr>
+       <td><a href="/timesheets/contacts/">Cancel</a></td>
+      <td><input type="submit" value="Edit" /></td>
+      </tr>) openOr {error("Contact was not found"); redirectTo("/timesheets/contacts/list")}
+
+
+  def ContactConfirmDelete(xhtml: Group): NodeSeq = {
+    (for (contact <- selectedContact.is)
+      yield
+      {
+        def deleteContact(ignore: String)
+        {
+          notice("Contact " + contact.firstName + " " + contact.lastName + " deleted.")
+          contact.delete_!
+          redirectTo("/timesheets/contacts/")
+        }
+
+        bind("cnp", xhtml, 
+          "name" --> (contact.firstName.is + " " + contact.lastName.is),
+          "delete" --> submit("Delete", deleteContact))
+      }) openOr {error("Contact not found"); redirectTo("/timesheets/contacts/list")}
+  }
+ 
+
+  def ContactList: NodeSeq = {
+    Contact.find() match {
+      case Empty => Contact.create.firstName("John").lastName("Doe").save
+      case _ =>
+    }
+
+    <thead><tr>{Contact.htmlHeaders}<th>View</th><th>Edit</th><th>Delete</th></tr></thead><tbody> {
+    Contact.findAll(OrderBy(Contact.lastName, true)).flatMap(u => 
+      <tr>{u.htmlLine}
+        <td>{link("/timesheets/contacts/view", () => selectedContact(Full(u)), Text("View"))}</td>
+        <td>{link("/timesheets/contacts/edit", () => selectedContact(Full(u)), Text("Edit"))}</td>
+        <td>{link("/timesheets/contacts/delete", () => selectedContact(Full(u)), Text("Delete"))}</td>
+      </tr>)} </tbody>
+  }
+
+   def ContactView(xhtml: Group): NodeSeq = {
+    (for (c <- selectedContact.is)
+      yield
+      {
+        bind("xmp", xhtml, 
+          "first" --> (c.firstName.is),
+          "last" --> (c.lastName.is),
+          "email" --> (c.email.is),
+          "cid" --> (c.clientID.is),
+          "notes" --> (c.notes.is)
+      )
+      }) openOr {error("Task not found"); redirectTo("/timesheets/tasks/list")}
+  }
+ 
+
+  // ===================================================================================
+  // One Day,
+  // Deafening Sounds,
+  // Then Silence.
+  // fieldOrder =  id :: userID :: projectID :: taskID :: theDate :: hours :: notes :: Nil
+  // ===================================================================================
+    def DayAdd(xhtml: Group): NodeSeq =
+      selectedDay.openOr(new Day).userID(User.currentUser).h_theDay(new java.util.Date).toForm(Empty, saveDay _) ++ <tr>      
+        <td><a href={dayRedir}>Cancel</a></td>
+        <td><input type="submit" value="Create" /></td>
+        </tr>
+
+    private def saveDay(day: Day) = day.validate match {
+        case Nil => day.save; redirectTo(dayRedir)
+        case x => error(x); selectedDay(Full(day))
+      }
+
+
+    def DayEdit(xhtml: Group): NodeSeq =
+      selectedDay.map(_.toForm(Empty, saveDay _) ++ <tr>
+         <td><a href={dayRedir}>Cancel</a></td>
+        <td><input type="submit" value="Edit" /></td>
+        </tr>) openOr {error("Day was not found"); redirectTo(dayRedir)}
+
+    def DayConfirmDelete(xhtml: Group): NodeSeq = { 
+      (for (day <- selectedDay.is)
+        yield
+        {   
+          def deleteDay(ignore: String)
+          {   
+            notice("Day " + day.h_theDay + " deleted.")
+            day.delete_!
+            redirectTo(dayRedir)        
+          }   
+          bind("xmp", xhtml, "project" --> (day.f_projectID.is), "task" --> (day.e_taskID.is), "delete" --> submit("Delete", deleteDay)) 
+        }) openOr {error("Day not found"); redirectTo(dayRedir)}
+    }
+
+    def DayList: NodeSeq = { 
+      Day.find() match {
+        case Empty => Day.create.f_projectID(1).save
+        case _ =>
+      }   
+      <thead>
+				<tr>{Day.htmlHeaders}<th>View</th><th>Edit</th><th>Delete</th></tr>
+			</thead>
+			<tbody> {
+      	Day.findAll(By(Day.userID, theUser.id), OrderBy(Day.h_theDay, true)).flatMap(u =>  
+        	<tr>{u.htmlLine}
+          	<td>{link("/timesheets/days/view", () => selectedDay(Full(u)), Text("View"))}</td>
+          	<td>{link("/timesheets/days/edit", () => selectedDay(Full(u)), Text("Edit"))}</td>
+          	<td>{link("/timesheets/days/delete", () => selectedDay(Full(u)), Text("Delete"))}</td>
+        	</tr>)} 
+			</tbody>
+    }
+
+    def DayView(xhtml: Group): NodeSeq = {
+    (for (d <- selectedDay.is)
+      yield
+      {
+        bind("xmp", xhtml, "day" --> (d.h_theDay.is), "pid" --> (d.f_projectID.is), "tid" --> (d.e_taskID.is), "hours" --> (d.g_hours.is), "notes" --> (d.a_notes.is))
+      }) openOr {error("Day not found"); redirectTo(dayRedir)}
+  }
+
+
+
+  // ===================================================================================
+  // Users
+  // ===================================================================================
+  def users: NodeSeq = {
+    User.find() match {
+      case Empty => User.create.firstName("Archer").lastName("Dog").email("archer@dogfood.com").password("mypassword").save
+      case _ =>
+    }
+    // the header
+    <tr>{User.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
+  // get and display each of the users
+  User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine} 
+		       <td>{link("/timesheets/weeks/edit", () => selectedUser(Full(u)), Text("Edit"))}</td>
+		       <td>{link("/timesheets/weeks/delete", () => selectedUser(Full(u)), Text("Delete"))}</td>
+		       </tr>)
+  }
+   
+  def confirmDelete(xhtml: Group): NodeSeq = {      
+    (for (user <- selectedUser.is) // find the user
+     yield { 
+       def deleteUser(ignore: String) {
+         notice("User "+(user.firstName+" "+user.lastName)+" deleted")
+         user.delete_!
+         redirectTo("/")
+       }
+       
+       // bind the incoming XHTML to a "delete" button.
+       // when the delete button is pressed, call the "deleteUser"
+       // function (which is a closure and bound the "user" object
+       // in the current content)
+       bind("xmp", xhtml, "username" --> (user.firstName.is+" "+user.lastName.is),
+	    "delete" --> submit("Delete", deleteUser))
+       
+       // if the was no ID or the user couldn't be found,
+       // display an error and redirect
+     }) openOr {error("User not found"); redirectTo("/")}
+   }
+  
+  // called when the form is submitted
+  private def saveUser(user: User) = user.validate match {
+             // no validation errors, save the user, and go
+             // back to the "list" page
+             case Nil => user.save; redirectTo("/")
+
+             // oops... validation errors
+             // display the errors and make sure our selected user is still the same
+             case x => error(x); selectedUser(Full(user))
+           }
+
+  def add(xhtml: Group): NodeSeq = 
+    selectedUser.openOr(new User).toForm(Empty, saveUser _) ++ <tr> 
+    <td><a href="/">Cancel</a></td>
+    <td><input type="submit" value="Create"/></td>
+    </tr>    
+
+  def edit(xhtml: Group): NodeSeq = 
+    selectedUser.map(_.toForm(Empty, saveUser _) ++ <tr> 
+           <td><a href="/">Cancel</a></td>
+           <td><input type="submit" value="Save"/></td>
+         </tr>
+
+       // bail out if the ID is not supplied or the user's not found
+     ) openOr {error("User not found"); redirectTo("/")}
+  
+
+  // the request-local variable that hold the file parameter
+  
+  /*
+      */
+}
+
+

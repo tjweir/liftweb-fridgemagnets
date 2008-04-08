@@ -1,0 +1,54 @@
+8
+
+dir
+38
+http://svn.tjweir.beanstalkapp.com/timetracker/src/main/scala/bootstrap/liftweb
+http://svn.tjweir.beanstalkapp.com/timetracker
+
+
+
+2008-01-21T03:10:13.104807Z
+14
+tjweir
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+6a93a8ee-0344-0410-b229-a77dd4893564
+
+Copy of Boot.scalaOFF
+file
+
+
+
+
+2008-03-24T17:20:38.470986Z
+c5634f1034dd010f21e8ffb2c2125dd8
+2008-01-18T19:13:18.279410Z
+1
+root
+has-props
+
+Boot.scala
+file
+49
+
+
+
+2008-03-17T20:19:19.340590Z
+23c7794fd2359aad98c1748549f148ae
+2008-03-24T17:23:05.255859Z
+49
+tjweir
+has-props
+

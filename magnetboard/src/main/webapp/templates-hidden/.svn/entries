@@ -1,0 +1,54 @@
+8
+
+dir
+38
+http://svn.tjweir.beanstalkapp.com/timetracker/src/main/webapp/templates-hidden
+http://svn.tjweir.beanstalkapp.com/timetracker
+
+
+
+2008-02-06T02:32:41.066875Z
+38
+tjweir
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+6a93a8ee-0344-0410-b229-a77dd4893564
+
+ajax.html
+file
+
+
+
+
+2008-01-18T19:13:33.733207Z
+631d296279036c6ac46f428abbb482ed
+2008-01-18T19:13:18.279410Z
+1
+root
+has-props
+
+default.html
+file
+49
+
+
+
+2008-03-24T14:36:34.215656Z
+7059b597223df0ceef15238510c9ac40
+2008-03-24T17:23:05.255859Z
+49
+tjweir
+has-props
+

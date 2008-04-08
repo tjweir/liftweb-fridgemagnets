@@ -1,0 +1,63 @@
+package net.liftweb.example.model
+
+/*                                                *\
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+\*                                                 */
+
+import net.liftweb.mapper._
+import DB._
+import java.sql.Connection
+import net.liftweb.example.model._
+import net.liftweb.util._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import scala.xml.{NodeSeq, Text, Group}
+ 
+object Contact extends Contact with KeyedMetaMapper[long, Contact] {
+  override def dbTableName = "contacts" // define the DB table name
+  override def fieldOrder = List(id, firstName, lastName, email, clientID, notes)
+
+  val sitemap = List(
+    Menu(Loc("ListContact", "/timesheets/contacts/list", "List Contacts", If(User.loggedIn_? _, "Please login"))),
+    Menu(Loc("CreateContact", "/timesheets/contacts/add", "Add Contact", If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("ViewContact", "/timesheets/contacts/view", "View Contact",  If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("EditContact", "/timesheets/contacts/edit", "Edit Contact",  If(User.loggedIn_? _, "Please login"), Hidden)),
+    Menu(Loc("DeleteContact", "/timesheets/contacts/delete", "Delete Contact", If(User.loggedIn_? _, "Please login"), Hidden)))
+}
+
+class Contact extends KeyedMapper[Long, Contact] {
+  def getSingleton = Contact 
+  def primaryKeyField = id
+
+  object id extends MappedLongIndex(this)
+
+  object firstName extends MappedString(this, 64) {
+    override def displayName = "First Name"
+  }
+  
+  object lastName extends MappedString(this, 64) {
+    override def displayName = "Last Name"
+    override def dbIndexed_? = true
+  }
+
+  object email extends MappedString(this, 128) {
+    override def displayName = "Email"
+  }
+  
+       
+  object clientID extends MappedLongForeignKey(this, Client)
+  {
+    override def displayName = "Client Name"
+	  override def asHtml = { <tt>{Client.find(By(Client.id, this)).map(pp => pp.name.is).openOr(Text("ClientName"))}</tt> }
+	  override def validSelectValues: Can[List[(Long, String)]] = Full (Client.findAll(OrderBy(Client.name, true)).map(c => (c.id.is, c.name.is))) 
+  }
+
+  object notes extends MappedTextarea(this, 4096) {
+    override def displayName = "Comments"
+    override def textareaRows  = 10
+    override def textareaCols = 50
+  }
+
+}

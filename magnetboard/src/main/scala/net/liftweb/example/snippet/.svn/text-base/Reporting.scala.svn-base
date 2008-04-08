@@ -1,0 +1,181 @@
+package net.liftweb.example.snippet
+
+import net.liftweb.example.model._
+import scala.xml.{NodeSeq, Text, Group, Node, Elem}
+import net.liftweb.http._
+import net.liftweb.http.S
+import net.liftweb.mapper._
+import net.liftweb.http.S._
+import net.liftweb.util.Helpers._
+import net.liftweb.util._
+import java.util.Locale
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+
+
+class Reporting {
+	val theUser: User = User.currentUser.openOr(new User)
+  val taskRedir = "/timesheets/tasks/list"
+  val projRedir = "/timesheets/projects/list"
+  val clientRedir = "/timesheets/clients/list"
+  val contactRedir = "/timesheets/contacts/list"
+  val dayRedir = "/timesheets/days/list"
+
+  def today = <span>{new java.util.Date}</span>
+ 
+  //    override def fieldOrder = List(id, h_theDay, g_hours, f_projectID, e_taskID, d_department, c_timecode, b_location, a_notes)
+
+  // ===================================================================================
+  // Reports
+  // ===================================================================================
+  val repSumQBill = """
+  select days.userid, users.firstName, users.lastName, projects.name, clients.name, timecode.name, sum(g_hours) 
+  from days, projects, users, clients, timecode 
+  where users.id = days.userid and userid != 0 and 
+  timecode.id = 1 and days.f_projectid = projects.id and 
+  projects.clientid = clients.id and days.c_timecode = timecode.id 
+  group by days.userid, clients.name, projects.name, days.c_timecode
+  """
+
+  val repSumQNonBill = """
+  select days.userid, users.firstName, users.lastName, projects.name, clients.name, timecode.name, sum(g_hours) 
+  from days, projects, users, clients, timecode 
+  where users.id = days.userid and userid != 0 and timecode.id != 1 and 
+  days.f_projectid = projects.id and projects.clientid = clients.id and 
+  days.c_timecode = timecode.id group by days.userid, clients.name, projects.name, days.c_timecode
+  """
+
+  val repMonthlyTotal = """
+  SELECT MONTH(h_theday) as month, YEAR(h_theday) as year, COUNT(*) AS jobs, sum(g_hours) as 'total hours' 
+  FROM days 
+  GROUP BY month
+  """
+
+  val repClientBreakdown = """
+  select year(days.h_theday) as 'year', month(days.h_theday) as 'month', users.firstname, users.lastname, clients.name as 'client', projects.name, days.g_hours from days
+  left join users on days.userid = users.id
+  left join projects on days.f_projectid = projects.id
+  left join clients on projects.clientid = clients.id
+  where days.c_timecode = 1
+  order by days.h_theday, clients.id
+  """
+
+  def ReportListBill: NodeSeq = {
+    if(theUser.super_?) {
+      val (columns, data) = DB.runQuery(repSumQBill)
+      <thead><tr><th>Name</th><th>Project Name</th><th>Client Name</th><th>Timecode</th><th>Total Hours</th></tr></thead>
+		  <tbody>{data.flatMap(u => <tr><td>{u(1)} {u(2)}</td><td>{u(3)}</td><td>{u(4)}</td><td>{u(5)}</td><td>{u(6)}</td></tr>)}</tbody>
+    }
+    else {
+      <h3>You need to be a super user.</h3>
+    }
+  }
+
+  def ReportListNonBill: NodeSeq = {
+    if(theUser.super_?) {
+      val (columns, data) = DB.runQuery(repSumQNonBill)
+      <thead><tr><th>Name</th><th>Project Name</th><th>Client Name</th><th>Timecode</th><th>Total Hours</th></tr></thead>
+		  <tbody>{data.flatMap(u => <tr><td>{u(1)} {u(2)}</td><td>{u(3)}</td><td>{u(4)}</td><td>{u(5)}</td><td>{u(6)}</td></tr>)}</tbody>
+    }
+    else {
+      <h3>You need to be a super user.</h3>
+    }
+
+  }
+
+  def ReportMonthly: NodeSeq = {
+    if(theUser.super_?) {
+    val (columns, data) = DB.runQuery(repMonthlyTotal)
+    <thead><tr><th>Month</th><th>Total Jobs</th><th>Total Hours</th></tr></thead>
+		<tbody>{data.flatMap(u => <tr><td>{if (u(0).length == 1) "0" + u(0) else u(0)}-{u(1)}</td><td>{u(2)}</td><td>{u(3)}</td></tr>)}</tbody>
+  }
+  else {
+      <h3>You need to be a super user.</h3>
+  }
+}
+
+  def ReportClient: NodeSeq = {
+    if(theUser.super_?) {
+      val (columns, data) = DB.runQuery(repClientBreakdown)
+      <thead><tr><th>Date</th><th>Name</th><th>Client</th><th>Project</th><th>Hours</th></tr></thead>
+		  <tbody>{data.flatMap(u => <tr><td>{u(0)}-{if (u(1).length == 1) "0" + u(1) else u(1)}</td><td>{u(2)} {u(3)}</td><td>{u(4)}</td><td>{u(5)}</td><td>{u(6)}</td> </tr>)}</tbody>
+    } else {
+      <h3>You need to be a super user.</h3>
+    }
+  }
+    
+
+  def ReportChart: NodeSeq = {
+    val (columns, data) = DB.runQuery(repSumQBill)
+    data.map(u => (Text("[" + u(1) + "," + u(5) + "]," ))) 
+  }
+
+
+  //----------------------------------------------------------
+  var date = DateForm.defdate
+  var city = ""
+
+  private def dateChoice(date: String): Elem = {
+    val dates = DateForm.datesFor(date)
+    val first = dates.head
+    untrustedSelect(dates.map(s => (s,s)), Full(first), city = _ )
+  }
+
+  def show(xhtml: Group): NodeSeq = 
+    bind( 
+    "select", xhtml,
+    "date" --> select(DateForm.dates.map(s => (s,s)), Full(date), date = _),
+    "submit" --> submit(?("Generate Report"), ignore => {S.notice("Date: " + date); println("Date: " + date)}))
+
+
+
+  object DateForm {
+    val datelisting = List( "January 2008" -> "01-2008",
+      "February 2008" -> "02-2008",
+      "March 2008" -> "03-2008",
+      "April 2008" -> "04-2008",
+      "May 2008" -> "05-2008",
+      "June 2008" -> "06-2008",
+      "July 2008" -> "07-2008",
+      "August 2008" -> "08-2008",
+      "September 2008" -> "09-2008",
+      "October 2008" -> "10-2008",
+      "November 2008" -> "11-2008",
+      "December 2008" -> "12-2008")
+
+    val dates = datelisting.map(_._1).removeDuplicates
+    val defdate: String = dates.head
+    def datesFor(date: String): List[String] = datelisting.filter(_._1 == date).map(_._2)
+  }
+}
+
+/*
+      var d1 = [[0, 1], [200, 200]]
+      //var d3 = [[{data(0)}, {data(1)}]];
+      $.plot($('#flotGraph2'), [ d1 ]);
+
+  	<script type='text/javascript'>
+      <![CDATA[
+      var d1 = [];
+      for (var i = 0; i < 14; i += 0.5)
+        d1.push([i, Math.sin(i)]);
+      var d2 = [[0, 3], [4, 8], [8, 5], [9, 153]];
+      var d3 = [[1, 3], [2, 8], [3, 4], [4, 53]];
+      ]]>
+      $.plot($('#flotGraph2'), [ d1, d2, d3 ]);
+  	</script>
+
+
+      <![CDATA[
+      var d1 = [];
+      for (var i = 0; i < 14; i += 0.5)
+        d1.push([i, Math.sin(i)]);
+      var d2 = [[0, 3], [4, 8], [8, 5], [9, 153]];
+      var d3 = [[1, 3], [2, 8], [3, 4], [4, 53]];
+      ]]>
+*/
+
+
+
+
+

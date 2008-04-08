@@ -1,0 +1,99 @@
+<lift:surround with="default" at="content">
+	<center><b>AJAX Samples</b></center>
+	<br />
+	<lift:snippet type="Ajax:sample" />
+	
+	<br />
+	<br />
+	<br />
+	
+	The <i>lift</i> to draw the controls:
+	<br />
+	
+    <style type="text/css">
+    <![CDATA[
+      .comment {
+        /* font-lock-comment-face */
+        color: #b22222;
+      }
+      .comment-delimiter {
+        /* font-lock-comment-delimiter-face */
+        color: #b22222;
+      }
+      .function-name {
+        /* font-lock-function-name-face */
+        color: #0000ff;
+      }
+      .keyword {
+        /* font-lock-keyword-face */
+        color: #a020f0;
+      }
+      .string {
+        /* font-lock-string-face */
+        color: #bc8f8f;
+      }
+      .type {
+        /* font-lock-type-face */
+        color: #228b22;
+      }
+      .variable-name {
+        /* font-lock-variable-name-face */
+        color: #b8860b;
+      }
+      ]]>
+    </style>
+
+    <pre>
+<span class="keyword">class</span> <span class="type">Ajax</span> {
+
+  <span class="keyword">def</span> <span class="function-name">sample</span> = {
+    <span class="keyword">var</span> <span class="variable-name">cnt</span> = 0
+
+    &lt;span&gt;
+    {
+      a(() =&gt; {cnt = cnt + 1; SetHtml(<span class="string">"cnt_id"</span>, Text( cnt.toString))},
+          &lt;span&gt;Click me to increase the count 
+           (currently &lt;span id='cnt_id'&gt;0&lt;/span&gt;)&lt;/span&gt;)
+      <span class="comment-delimiter">// </span><span class="comment">a link that does AJAX to increment a counter server-side 
+</span>      <span class="comment-delimiter">// </span><span class="comment">and displays the result on the client
+</span>    } &lt;br /&gt;
+
+    &lt;div id=<span class="string">"messages"</span>&gt;&lt;/div&gt;
+    {
+      <span class="keyword">val</span> <span class="variable-name">opts</span> = (1 to 50).toList.map(i =&gt; (i.toString, i.toString)) 
+      <span class="comment-delimiter">// </span><span class="comment">build the options
+</span>      ajaxSelect(opts, Full(1.toString), 
+                 v =&gt; DisplayMessage(<span class="string">"messages"</span>, 
+                                     Text(<span class="string">"You selected "</span>+v) ++
+                                     &lt;span&gt;&amp;nbsp;From the select box&lt;/span&gt;,
+                                     5 seconds, 1 second))
+    } &lt;br /&gt;
+    {
+      ajaxText(<span class="string">""</span>, v =&gt; DisplayMessage(<span class="string">"messages"</span>, 
+                                       Text(<span class="string">"You entered some text: "</span>+v),
+                                       4 seconds, 1 second))
+    } &lt;br /&gt;
+    {
+      swappable(&lt;span&gt;Click to edit: &lt;span id='the_text'&gt;&lt;/span&gt;&lt;/span&gt;,
+                ajaxText(<span class="string">""</span>, 
+                         v =&gt; DisplayMessage(<span class="string">"messages"</span>, 
+                                             Text(<span class="string">"You entered some text: "</span>+v),
+                                             4 seconds, 1 second)
+                         + SetHtml(<span class="string">"the_text"</span>, Text(v))))
+    } &lt;br /&gt;
+
+    &lt;textarea id=<span class="string">"the_area"</span> cols=<span class="string">"50"</span> rows=<span class="string">"10"</span>&gt;&lt;/textarea&gt;
+    &lt;br /&gt;
+
+    &lt;a href=<span class="string">"#"</span> onclick={
+      ajaxCall(<span class="string">"document.getElementById('the_area').value"</span>,
+               text =&gt; DisplayMessage(<span class="string">"messages"</span>, 
+                                      &lt;pre&gt;{text}&lt;/pre&gt;, 
+                                      4 seconds, 200))
+    }&gt;Enter text above and click me&lt;/a&gt;
+
+    &lt;/span&gt;
+  }
+}
+</pre>	
+</lift:surround>
